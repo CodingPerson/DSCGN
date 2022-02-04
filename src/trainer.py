@@ -560,7 +560,7 @@ class LOTClassTrainer(object):
                     #chenhu
                     #按权重对loss进行加权
                     # softmax = nn.Softmax()
-                    #loss = torch.sum(torch.mul(loss,(weights)))
+                    loss = torch.sum(torch.mul(loss,(weights)))
                     loss = torch.sum(loss)
                     total_train_loss += loss.item()
                     loss.backward()
@@ -570,25 +570,25 @@ class LOTClassTrainer(object):
                         optimizer.step()
                         model.zero_grad()
                 #chenhu
-                # for j, batch in enumerate(web_dataset_loader):
-                #     input_ids = batch[0].to(rank)
-                #     input_mask = batch[1].to(rank)
-                #     labels = batch[2].to(rank)
-                #     logits = model(input_ids,
-                #                    pred_mode="mcp",
-                #                    token_type_ids=None,
-                #                    attention_mask=input_mask)
-                #     #logits = logits[:, 0, :]
-                #     loss = self.GCE_loss(logits, labels)
-                #     loss = torch.sum(loss)
-                #     total_train_loss += loss.item()
-                #     loss.backward()
-                #     #if (j+1) % self.accum_steps == 0:
-                #         # Clip the norm of the gradients to 1.0.
-                #     nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                #     optimizer.step()
-                #
-                #     model.zero_grad()
+                for j, batch in enumerate(web_dataset_loader):
+                    input_ids = batch[0].to(rank)
+                    input_mask = batch[1].to(rank)
+                    labels = batch[2].to(rank)
+                    logits = model(input_ids,
+                                   pred_mode="mcp",
+                                   token_type_ids=None,
+                                   attention_mask=input_mask)
+                    #logits = logits[:, 0, :]
+                    loss = self.GCE_loss(logits, labels)
+                    loss = torch.sum(loss)
+                    total_train_loss += loss.item()
+                    loss.backward()
+                    #if (j+1) % self.accum_steps == 0:
+                        # Clip the norm of the gradients to 1.0.
+                    nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimizer.step()
+                
+                    model.zero_grad()
                 scheduler.step()
                 avg_train_loss = torch.tensor([total_train_loss]).to(rank)
                 gather_list = [torch.ones_like(avg_train_loss) for _ in range(self.world_size)]
